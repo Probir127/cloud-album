@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String?
+  email         String?    @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole   @default(MEMBER)
+  createdAt     DateTime   @default(now())
+  accounts      Account[]
+  comments      Comment[]
+  media         Media[]
+  reactions     Reaction[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Media {
+  id           String       @id @default(cuid())
+  cloudinaryId String       @unique
+  url          String
+  thumbnailUrl String
+  type         MediaType    @default(IMAGE)
+  caption      String?
+  exifData     Json?
+  aiTags       Json?
+  takenAt      DateTime?
+  uploadedAt   DateTime     @default(now())
+  uploaderId   String
+  albumCovers  Album[]      @relation("AlbumCover")
+  albums       AlbumMedia[]
+  comments     Comment[]
+  uploader     User         @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  reactions    Reaction[]
+}
+
+model Album {
+  id            String       @id @default(cuid())
+  name          String
+  coverMediaId  String?
+  isSmartAlbum  Boolean      @default(false)
+  smartCriteria Json?
+  createdAt     DateTime     @default(now())
+  coverMedia    Media?       @relation("AlbumCover", fields: [coverMediaId], references: [id])
+  media         AlbumMedia[]
+}
+
+model AlbumMedia {
+  albumId String
+  mediaId String
+  album   Album  @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([albumId, mediaId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  mediaId   String
+  userId    String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Reaction {
+  id      String @id @default(cuid())
+  emoji   String
+  mediaId String
+  userId  String
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, userId, emoji])
+}
+
+model Invite {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  email     String?
+  role      UserRole  @default(MEMBER)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
