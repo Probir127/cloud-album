@@ -35,7 +35,7 @@ export default async function AlbumDetailPage({ params }: { params: Promise<{ id
 
     if (!album) notFound();
 
-    const mediaList = album.media.map(am => am.media);
+    const mediaList = album.media.map((am: any) => am.media);
 
     return (
         <div className="flex flex-col min-h-screen">
